@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedScan AI - Clinical Medicine Vision, Lab Report Diagnoser &amp; Health Diary</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyan: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490'
+            },
+            bio: {
+              dark: '#0a0f1d',
+              surface: '#111827',
+              card: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Audio waveform animation */
+    @keyframes waveBar {
+      0%, 100% { height: 6px; }
+      50% { height: 26px; }
+    }
+    .wave-bar {
+      width: 4px;
+      height: 8px;
+      background: #22d3ee;
+      border-radius: 9999px;
+      display: inline-block;
+      animation: waveBar 1.2s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; background: #38bdf8; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; background: #60a5fa; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; background: #818cf8; }
+    .wave-bar:nth-child(5) { animation-delay: 0.6s; background: #a78bfa; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col bg-grid-pattern selection:bg-cyan-500 selection:text-black">
+
+  <!-- ======================================================== -->
+  <!-- TOP NAVIGATION HEADER                                    -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 shrink-0 cursor-pointer" id="brandLogoHome">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-lg tracking-tight gradient-text-bio">MedScan AI</h1>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase tracking-wider">HealthCare Suite</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Clinical Medicine Info, Lab Analyzer, Health Diary &amp; Cabinet</p>
+        </div>
+      </div>
+
+      <!-- Quick Medicine Search Bar -->
+      <div class="relative flex-1 max-w-md hidden md:block">
+        <div class="relative">
+          <input 
+            type="text" 
+            id="searchInput"
+            placeholder="Search medicine by name (e.g. Paracetamol, Dolo 650, Amoxicillin, Metformin)..." 
+            class="w-full pl-9 pr-4 py-2 text-xs bg-slate-800/80 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition"
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+        <div id="searchResultsDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto"></div>
+      </div>
+
+      <!-- User Account & Quick Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Logged-in User Profile Pill -->
+        <div id="userProfilePill" class="hidden flex items-center bg-slate-800 border border-slate-700 rounded-xl p-1 gap-2">
+          <div id="userAvatarIcon" class="w-7 h-7 rounded-lg bg-cyan-900/60 text-cyan-300 flex items-center justify-center text-sm font-bold">
+            👤
+          </div>
+          <div class="text-left pr-1">
+            <p id="userNameDisplay" class="text-xs font-bold text-slate-200 leading-none">Alex Sharma</p>
+            <p id="userIdentifierDisplay" class="text-[10px] text-cyan-400 font-medium leading-tight">Age: 34 • Male</p>
+          </div>
+          <button id="logoutBtn" title="Sign Out / Log Out" class="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition flex items-center gap-1 text-[11px] font-semibold">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span class="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+
+        <!-- Auth Login / Register Trigger Button (if logged out) -->
+        <button id="showAuthBtn" class="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-500/20 transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+          <span>Sign In / Register</span>
+        </button>
+
+        <!-- Quick Cabinet Drawer Button -->
+        <button id="openCabinetBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span class="hidden sm:inline">My Cabinet</span>
+          <span id="cabinetCountBadge" class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">3</span>
+        </button>
+
+        <!-- Gemini API Key Settings Button -->
+        <button id="openApiKeyBtn" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 transition" title="AI Vision Settings">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Active Patient Profile & Allergy Shield Bar -->
+    <div id="patientSafetyBar" class="bg-slate-950/80 border-t border-slate-800/80 px-4 py-1.5 text-center text-xs text-slate-300 flex flex-wrap items-center justify-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="font-bold text-cyan-400">Patient Health Shield:</span>
+      <span id="activePatientInfo" class="font-medium text-slate-300">Checking patient records...</span>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- AUTHENTICATION VIEW (LOGIN & REGISTER)                   -->
+  <!-- ======================================================== -->
+  <section id="authView" class="hidden max-w-lg w-full mx-auto my-auto p-4 sm:p-6">
+    <div class="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl card-glow-cyan">
+      
+      <!-- Auth Header (Welcome to MedScan AI) -->
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 mx-auto flex items-center justify-center text-white text-2xl shadow-lg shadow-cyan-500/25 mb-3">
+          🩺
+        </div>
+        <h2 class="text-2xl font-extrabold text-white tracking-tight" id="authTitle">Welcome to MedScan AI</h2>
+        <p class="text-xs text-slate-400 mt-1" id="authSubtitle">Sign In with your Name, Mobile Number &amp; Password</p>
+      </div>
+
+      <!-- Auth Tab Switcher (Login vs Register) -->
+      <div class="flex p-1 bg-slate-900 rounded-xl mb-5 border border-slate-700">
+        <button id="tabLoginBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-cyan-600 text-white shadow">Sign In</button>
+        <button id="tabRegisterBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition text-slate-400 hover:text-white">Register Account</button>
+      </div>
+
+      <!-- LOGIN FORM (User Request: Only Name, Number & Password asked) -->
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Your Name</label>
+          <input 
+            type="text" 
+            id="loginName" 
+            required 
+            placeholder="e.g. Alex Sharma" 
+            class="w-full text-xs p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Mobile / Phone Number</label>
+          <input 
+            type="tel" 
+            id="loginNumber" 
+            required 
+            placeholder="e.g. 9876543210" 
+            class="w-full text-xs p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Password</label>
+          <input 
+            type="password" 
+            id="loginPassword" 
+            required 
+            placeholder="••••••••" 
+            class="w-full text-xs p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/25 transition">
+          Sign In
+        </button>
+      </form>
+
+      <!-- REGISTRATION FORM (Name, Number, Password, Age, Gender, Health Conditions) -->
+      <form id="registerForm" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Full Name</label>
+          <input 
+            type="text" 
+            id="regName" 
+            required 
+            placeholder="e.g. Rahul Sharma" 
+            class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Mobile / Phone Number</label>
+          <input 
+            type="tel" 
+            id="regPhone" 
+            required 
+            placeholder="e.g. 9876543210" 
+            class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Set Password</label>
+          <input 
+            type="password" 
+            id="regPassword" 
+            required 
+            placeholder="Minimum 3 characters" 
+            class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Age</label>
+            <input type="number" id="regAge" value="30" min="1" max="120" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Gender</label>
+            <select id="regGender" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Any Existing Health Conditions</label>
+          <input 
+            type="text" 
+            id="regConditions" 
+            placeholder="e.g. Hypertension, Type 2 Diabetes, Asthma, Heart Condition (or None)" 
+            class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none"
+          />
+          <p class="text-[10px] text-cyan-400 mt-0.5">Used by the Safety Shield to cross-check medication suitability.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Known Drug Allergies (Optional)</label>
+          <input 
+            type="text" 
+            id="regAllergies" 
+            placeholder="e.g. Penicillin, Sulfa, Aspirin (or None)" 
+            class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none"
+          />
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 transition">
+          Create Patient Profile &amp; Sign In
+        </button>
+      </form>
+
+      <!-- 1-Click Quick Demo Login -->
+      <div class="mt-6 pt-5 border-t border-slate-700">
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Instant Evaluation Demo Accounts</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="quickDemoLoginBtn" type="button" class="py-2 px-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5">
+            <span>👨‍💼</span>
+            <span>Sign In: <strong>Alex Sharma</strong></span>
+          </button>
+          <button id="quickDemoDoctorBtn" type="button" class="py-2 px-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5">
+            <span>👩‍⚕️</span>
+            <span>Sign In: <strong>Dr. Priya Patel</strong></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- MAIN APP WORKSPACE (WHEN LOGGED IN)                      -->
+  <!-- ======================================================== -->
+  <div id="mainAppWorkspace" class="flex-1 flex flex-col">
+
+    <!-- Secondary Navigation Tab Bar -->
+    <nav class="bg-slate-800/80 border-b border-slate-800 px-4 py-2 sticky top-16 z-30 backdrop-blur-md">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto">
+        
+        <div class="flex items-center gap-2 shrink-0" id="navTabs">
+          <!-- Tab 1: Medicine Visual Scanner & Search -->
+          <button id="tabMedicineScanner" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Medicine Visual Scanner</span>
+          </button>
+
+          <!-- Tab 2: Lab Report Diagnoser & Specific Problems -->
+          <button id="tabLabReport" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Lab Report Scanner</span>
+          </button>
+
+          <!-- Tab 3: Health Diary & Vitals Calculator (User Request) -->
+          <button id="tabHealthDiary" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>Health Diary (BP, Sugar, Weight)</span>
+            <span class="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">CALC</span>
+          </button>
+
+          <!-- Tab 4: Stored Medicines Cabinet (User Request) -->
+          <button id="tabMedicineCabinet" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <span>Stored Medicines</span>
+          </button>
+        </div>
+
+        <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span>Voice Announcement Enabled</span>
+        </div>
+
+      </div>
+    </nav>
+
+    <!-- ====================================================== -->
+    <!-- VIEW 1: MEDICINE VISUAL SCANNER & PHARMACOLOGY         -->
+    <!-- ====================================================== -->
+    <main id="medicineScannerView" class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left: Camera Viewfinder, Upload & Demo Presets -->
+        <div class="lg:col-span-5 space-y-6" id="scannerLeftCol">
+          
+          <!-- Camera Viewfinder Card -->
+          <div class="bg-slate-800/90 rounded-2xl border border-slate-700 shadow-xl overflow-hidden card-glow-cyan">
+            
+            <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                <h2 class="font-bold text-sm text-slate-100">Medicine Optical Feed</h2>
+              </div>
+              
+              <select id="scanModeSelect" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 font-semibold focus:outline-none">
+                <option value="auto">Auto Detect</option>
+                <option value="medicine">Medicine Packaging / Strip</option>
+                <option value="prescription">Doctor Prescription Note</option>
+              </select>
+            </div>
+
+            <!-- Viewfinder Area -->
+            <div class="relative bg-black aspect-[4/3] flex items-center justify-center overflow-hidden">
+              <div class="laser-scan-line"></div>
+
+              <div class="corner-bracket corner-tl"></div>
+              <div class="corner-bracket corner-tr"></div>
+              <div class="corner-bracket corner-bl"></div>
+              <div class="corner-bracket corner-br"></div>
+
+              <div id="cameraView" class="w-full h-full flex items-center justify-center">
+                <video id="videoFeed" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                <div id="cameraEmptyState" class="text-center p-6 text-slate-400">
+                  <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 mx-auto flex items-center justify-center mb-3 text-cyan-400">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </div>
+                  <p class="text-sm font-semibold text-slate-200">Live Shutter Ready</p>
+                  <p class="text-xs text-slate-500 mt-1">Start camera, drop a photo, or click a demo sample below.</p>
+                </div>
+              </div>
+
+              <div id="previewView" class="w-full h-full hidden flex items-center justify-center bg-black">
+                <img id="previewImage" alt="Captured Medication" class="max-h-full max-w-full object-contain" />
+              </div>
+
+              <canvas id="captureCanvas" class="hidden"></canvas>
+            </div>
+
+            <!-- Camera Controls -->
+            <div class="p-4 bg-slate-900/90 border-t border-slate-700 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <button id="startCameraBtn" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  Start Camera
+                </button>
+                <button id="stopCameraBtn" class="hidden px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold transition">
+                  Stop
+                </button>
+                <button id="switchCameraBtn" disabled class="p-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 border border-slate-700 rounded-xl text-slate-300 transition" title="Switch Camera">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+              </div>
+
+              <button id="snapBtn" disabled class="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-cyan-500/25 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+                Capture Photo
+              </button>
+            </div>
+
+            <!-- Retake / Scan Actions -->
+            <div id="previewActions" class="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-2">
+              <button id="retakeBtn" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Retake
+              </button>
+              <button id="scanBtn" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Scan Now
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload Drop Zone -->
+          <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl p-5 text-center transition cursor-pointer bg-slate-800/60">
+            <input type="file" id="uploadInput" accept="image/*" class="hidden" />
+            <label for="uploadInput" class="cursor-pointer block">
+              <div class="w-10 h-10 rounded-xl bg-cyan-950/80 text-cyan-400 mx-auto flex items-center justify-center mb-2 border border-cyan-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              </div>
+              <p class="text-xs font-bold text-slate-200">Upload Medicine or Prescription Photo</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Drag &amp; drop or click to upload</p>
+            </label>
+          </div>
+
+          <!-- Demo Medicine Presets Gallery (User Request: Paracetamol & others) -->
+          <div id="samplePresetsSection" class="bg-slate-800/80 rounded-2xl border border-slate-700 p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="font-bold text-xs text-slate-200 uppercase tracking-wider">Try Demo Medicine Presets</h3>
+                <p class="text-[11px] text-slate-400">1-click test with Paracetamol, Amoxicillin, Metformin</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">1-Click Test</span>
+            </div>
+            <div id="samplePresetsGallery" class="grid grid-cols-2 gap-3"></div>
+          </div>
+
+        </div>
+
+        <!-- Right: Results & Full Pharmacology (Fever, Uses, How, Adults/Kids/Citizens, Overdose, Problems, Doctor) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Welcome Banner (When empty) -->
+          <div id="welcomeHero" class="bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white border border-slate-700 card-glow-indigo relative overflow-hidden">
+            <div class="relative z-10">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-bold mb-4">
+                <span>💊</span>
+                <span>Clinical Pharmacology &amp; Visual Intelligence</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight mb-3">
+                Understand Your Medicines: Fever, Uses &amp; Safety
+              </h2>
+              <p class="text-slate-300 text-sm leading-relaxed mb-6 max-w-xl">
+                Upload or click <strong class="text-cyan-400">Paracetamol (Dolo 650)</strong> to check its fever &amp; pain uses, how to take it, suitability for <strong class="text-cyan-400">adults, children, and senior citizens</strong>, maximum daily limits, side effect problems, emergency doctor red flags, expiry dates, and <strong class="text-cyan-400">voice audio announcements</strong>!
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button id="quickParacetamolHeroBtn" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+                  <span>💊</span>
+                  <span>Instant Check: Paracetamol / Dolo 650</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scanning Animation Overlay -->
+          <div id="scanningOverlay" class="hidden bg-slate-800 rounded-3xl border border-slate-700 p-8 text-center shadow-2xl">
+            <div class="w-16 h-16 mx-auto mb-4 relative flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full border-4 border-slate-700 border-t-cyan-400 animate-spin"></div>
+              <span class="absolute text-xl">🔬</span>
+            </div>
+            <h3 class="font-bold text-base text-slate-100">Analyzing Medication Visuals...</h3>
+            <p id="scanningStatusText" class="text-xs text-cyan-400 mt-1 animate-pulse">Checking pharmacology, dosage safety &amp; expiry records...</p>
+          </div>
+
+          <!-- Scan Results Container -->
+          <div id="resultsContainer" class="hidden space-y-6">
+
+            <!-- Result Header Action Bar -->
+            <div class="bg-slate-800/90 rounded-2xl border border-slate-700 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span id="aiSourceBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">Clinical Knowledge Engine</span>
+                <span class="text-xs text-slate-500">|</span>
+                <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                  <span>✓</span> High Precision Match
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <!-- Save to Cabinet Button -->
+                <button id="addToCabinetBtn" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                  <span>Save to Cabinet</span>
+                </button>
+
+                <!-- Print Medication Summary -->
+                <button id="printReportBtn" class="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold transition" title="Print Medication Report">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- USER REQUEST: VOICE ANNOUNCEMENT PANEL -->
+            <div class="p-4 bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 rounded-2xl border border-cyan-800/80 shadow-lg">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center text-lg shadow-sm">
+                    🔊
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>Tablet Voice Announcement</span>
+                      <span id="voiceSpeakingBadge" class="hidden text-[9px] px-2 py-0.5 rounded-full bg-cyan-500 text-black font-black animate-pulse">SPEAKING</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-400">Listen aloud to clinical dosage, uses, warnings &amp; doctor guidance</p>
+                  </div>
+                </div>
+
+                <!-- Voice Audio Equalizer & Controls -->
+                <div class="flex items-center gap-2">
+                  <!-- Waveform bars -->
+                  <div id="audioWaveVisualizer" class="hidden flex items-center gap-1 h-6 px-2">
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                  </div>
+
+                  <!-- Play / Pause / Stop -->
+                  <button id="ttsBtn" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-cyan-500/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span id="ttsBtnText">Listen Aloud</span>
+                  </button>
+
+                  <button id="ttsStopBtn" class="hidden px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition">
+                    Stop
+                  </button>
+
+                  <!-- Speed Rate Switcher -->
+                  <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl p-0.5 text-[10px] font-bold">
+                    <button class="tts-speed-btn px-2 py-1 rounded-lg text-slate-400 hover:text-white" data-rate="0.8">0.8x</button>
+                    <button class="tts-speed-btn px-2 py-1 rounded-lg bg-cyan-600 text-white" data-rate="1.0">1.0x</button>
+                    <button class="tts-speed-btn px-2 py-1 rounded-lg text-slate-400 hover:text-white" data-rate="1.2">1.2x</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Patient Safety Guardian Alerts (Allergies & Conditions check) -->
+            <div id="safetyAlertBox" class="space-y-2"></div>
+
+            <!-- Medicine Full Details Card -->
+            <div id="medicineResultCard" class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl space-y-6">
+              
+              <!-- USER REQUEST: EXPIRY DATE & BATCH BANNER -->
+              <div id="medExpiryBanner" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                    📅
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold uppercase text-slate-400">Medicine Expiry Details:</span>
+                      <span id="medExpiryBadge" class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase">SAFE &amp; VALID</span>
+                    </div>
+                    <p class="text-xs font-extrabold text-white mt-0.5">
+                      Expiry Date: <span id="medExpiryDate" class="text-emerald-400">02/2029</span> • Mfg Date: <span id="medMfgDate" class="text-slate-300">03/2026</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="text-right text-[11px] text-slate-400">
+                  <span>Batch: <strong id="medBatchNo" class="text-slate-200 font-mono">DLO-650-8824</strong></span>
+                  <p id="medValidityText" class="text-[10px] text-emerald-400 font-medium">Valid for approx. 27 months</p>
+                </div>
+              </div>
+
+              <!-- Medicine Title & Category -->
+              <div class="border-b border-slate-700 pb-5">
+                <div class="flex items-center gap-2 mb-1">
+                  <span id="medCategory" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase tracking-wide">Analgesic &amp; Antipyretic</span>
+                  <span class="text-xs font-bold text-slate-400" id="medStrength">650 mg</span>
+                </div>
+                <h2 id="medName" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Paracetamol / Acetaminophen</h2>
+                <p id="medGeneric" class="text-xs text-slate-400 font-medium mt-0.5">Active Generic Salt: Acetaminophen IP</p>
+              </div>
+
+              <!-- USER REQUEST: FEVER & USES -->
+              <div class="p-5 rounded-2xl bg-slate-900 border border-slate-700 space-y-3">
+                <div class="flex items-center gap-2 text-rose-400">
+                  <span class="text-xl">🌡️</span>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-rose-300">Fever Reduction &amp; Clinical Uses</h3>
+                </div>
+                <p id="medWhyToTake" class="text-xs text-slate-300 leading-relaxed font-medium">
+                  Acts directly on the temperature-regulating center of the brain (hypothalamus) to bring down high fever, and blocks pain messenger chemicals (prostaglandins) in the central nervous system.
+                </p>
+                <div>
+                  <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Approved Indications:</h4>
+                  <ul id="medIndicationsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                      <span class="text-cyan-400 font-bold">✓</span> High body temperature &amp; viral/bacterial fever
+                    </li>
+                    <li class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                      <span class="text-cyan-400 font-bold">✓</span> Headache, tension migraine &amp; toothache
+                    </li>
+                    <li class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                      <span class="text-cyan-400 font-bold">✓</span> Muscular soreness, body ache &amp; back pain
+                    </li>
+                    <li class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                      <span class="text-cyan-400 font-bold">✓</span> Post-vaccination fever &amp; joint stiffness
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- USER REQUEST: HOW TO USE & WHEN TO TAKE -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-800/60">
+                  <div class="flex items-center gap-2 mb-2 text-cyan-300">
+                    <span class="text-lg">💧</span>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider">How to Use</h3>
+                  </div>
+                  <p id="medHowToTake" class="text-xs text-slate-300 leading-relaxed font-medium">
+                    Take orally with a glass of water. Can be taken on an empty stomach or after meals. Maintain a minimum gap of at least 4 to 6 hours between doses. Do NOT crush or chew prolonged-release tablets.
+                  </p>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/60">
+                  <div class="flex items-center gap-2 mb-2 text-indigo-300">
+                    <span class="text-lg">⏰</span>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider">When to Take</h3>
+                  </div>
+                  <p id="medWhenToTake" class="text-xs text-slate-300 leading-relaxed font-medium">
+                    Take as needed (SOS/PRN) when body temperature exceeds 100°F (37.8°C) or upon onset of headache or body soreness. Allow 4-6 hours before considering another dose.
+                  </p>
+                </div>
+              </div>
+
+              <!-- USER REQUEST: IS IT OK FOR ADULTS, CHILDREN, CITIZENS (3-COLUMN DEDICATED CARDS) -->
+              <div>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-cyan-400 text-lg">👥</span>
+                  <h3 class="text-xs font-extrabold text-white uppercase tracking-wider">Suitability &amp; Dosage Guidelines by Age Group</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  <!-- Adults -->
+                  <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-extrabold text-slate-200 flex items-center gap-1.5">
+                        <span>👨‍🦰</span> Adults (18-64 Y)
+                      </span>
+                      <span id="adultBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">SAFE</span>
+                    </div>
+                    <p id="adultDosage" class="text-xs font-bold text-cyan-400">500 mg - 650 mg every 4-6 hours</p>
+                    <p id="adultMax" class="text-[11px] text-slate-400">Max 4,000 mg (4g) in 24 hours.</p>
+                    <p id="adultNotes" class="text-[11px] text-slate-300 leading-relaxed">Highly safe and first-line fever reducer for healthy adults. Never combine with other paracetamol products.</p>
+                  </div>
+
+                  <!-- Children -->
+                  <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-extrabold text-slate-200 flex items-center gap-1.5">
+                        <span>👶</span> Children (Pediatric)
+                      </span>
+                      <span id="childBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800">CAUTION</span>
+                    </div>
+                    <p id="childDosage" class="text-xs font-bold text-amber-400">10-15 mg/kg per dose</p>
+                    <p id="childMax" class="text-[11px] text-slate-400">Max 4 doses in 24 hours.</p>
+                    <p id="childNotes" class="text-[11px] text-slate-300 leading-relaxed">Do NOT give adult 650mg tablets! Use pediatrician-prescribed pediatric oral drops/syrup with calibrated measuring dropper.</p>
+                  </div>
+
+                  <!-- Senior Citizens -->
+                  <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-extrabold text-slate-200 flex items-center gap-1.5">
+                        <span>👴</span> Senior Citizens (65+)
+                      </span>
+                      <span id="citizenBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-yellow-950 text-yellow-400 border border-yellow-800">ADJUSTED</span>
+                    </div>
+                    <p id="citizenDosage" class="text-xs font-bold text-yellow-400">500 mg every 6-8 hours</p>
+                    <p id="citizenMax" class="text-[11px] text-slate-400">Max 2,000 - 3,000 mg in 24 hours.</p>
+                    <p id="citizenNotes" class="text-[11px] text-slate-300 leading-relaxed">Lower dosage ceiling recommended due to age-related decline in hepatic clearance and renal filtration. Monitor liver function.</p>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- USER REQUEST: HOW MUCH DRUG (MAX LIMITS & OVERDOSE METER) -->
+              <div class="p-5 rounded-2xl bg-slate-900 border border-slate-700 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">⚖️</span>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-200">How Much Drug (Dosage Limit &amp; Overdose Safety Meter)</h3>
+                  </div>
+                  <span class="text-xs font-bold text-rose-400">Max Adult Limit: 4,000 mg / 24h</span>
+                </div>
+
+                <!-- Dosage Scale Visualizer -->
+                <div class="space-y-1.5">
+                  <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden flex">
+                    <div class="w-1/2 bg-emerald-500" title="Safe standard range (up to 2,000 mg)"></div>
+                    <div class="w-1/4 bg-amber-500" title="Moderate / Elderly ceiling (2,000 - 3,000 mg)"></div>
+                    <div class="w-1/4 bg-red-600" title="Absolute adult max (4,000 mg)"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                    <span>0 mg (Start)</span>
+                    <span class="text-emerald-400">1,300 mg (2 Tabs)</span>
+                    <span class="text-amber-400">2,600 mg (4 Tabs)</span>
+                    <span class="text-red-400 font-bold">4,000 mg (CRITICAL CEILING)</span>
+                  </div>
+                </div>
+
+                <div class="p-3 bg-red-950/40 border border-red-800/80 rounded-xl text-xs text-red-200 leading-relaxed">
+                  <strong class="text-red-400">⚠️ OVERDOSE DANGER ALERT:</strong>
+                  <span id="medOverdoseWarning">
+                    Consuming more than 4,000 mg (4 grams) in 24 hours can deplete hepatic glutathione, causing acute liver necrosis / liver failure. Never combine with cough syrups containing paracetamol, and strictly avoid alcohol.
+                  </span>
+                </div>
+              </div>
+
+              <!-- USER REQUEST: IF ANY PROBLEMS (SIDE EFFECTS & RISKS) -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700">
+                  <h4 class="text-xs font-bold text-slate-300 mb-2.5 flex items-center gap-1.5">
+                    <span>ℹ️</span> Common / Mild Problems
+                  </h4>
+                  <div id="medCommonSideEffects" class="flex flex-wrap gap-1.5">
+                    <span class="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">Mild nausea</span>
+                    <span class="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">Mild dizziness</span>
+                    <span class="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">Well-tolerated at normal doses</span>
+                  </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-red-950/30 border border-red-800">
+                  <h4 class="text-xs font-bold text-red-300 mb-2.5 flex items-center gap-1.5">
+                    <span>⚠️</span> Serious Problems &amp; Severe Reactions
+                  </h4>
+                  <div id="medSeriousProblems" class="space-y-1.5 text-xs text-red-200">
+                    <p>• Acute liver toxicity &amp; jaundice (in overdose or chronic alcohol intake)</p>
+                    <p>• Allergic swelling of face, lips, tongue, or throat (Angioedema)</p>
+                    <p>• Stevens-Johnson syndrome (severe skin blistering &amp; peeling - rare)</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- USER REQUEST: CONTACTING DOCTOR INFORMATION -->
+              <div class="p-5 rounded-2xl bg-rose-950/50 border border-rose-800 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xl">🚨</span>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-rose-300">When to Contact a Doctor Immediately (Emergency Red Flags)</h3>
+                  </div>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-900 text-rose-200 border border-rose-700">EMERGENCY ACTION</span>
+                </div>
+                
+                <ul id="medDoctorWarningList" class="space-y-1.5 text-xs text-rose-200">
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-400 font-bold shrink-0">1.</span>
+                    <span>High fever remains above 102°F (38.9°C) or lasts more than 3 consecutive days without reduction.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-400 font-bold shrink-0">2.</span>
+                    <span>Signs of severe allergic reaction: swelling of face, lips, tongue, or sudden difficulty breathing or wheezing.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-400 font-bold shrink-0">3.</span>
+                    <span>Signs of liver distress: yellowing of skin or whites of eyes (jaundice), tea-colored dark urine, or severe upper right stomach pain.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-400 font-bold shrink-0">4.</span>
+                    <span>Suspected accidental double-dose or intake exceeding 4,000 mg in 24 hours.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-400 font-bold shrink-0">5.</span>
+                    <span>Development of an unexplained red skin rash, hives, or peeling blisters.</span>
+                  </li>
+                </ul>
+
+                <div class="pt-2 flex flex-wrap gap-2">
+                  <button class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2" onclick="alert('Emergency Medical Assistance: Please call your local emergency services (102 / 108 / 911) or visit the nearest emergency hospital immediately.')">
+                    <span>📞</span>
+                    <span>Emergency Doctor Helpline / Call Ambulance</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- SIMILAR MEDICINES & GENERIC ALTERNATIVES -->
+              <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-cyan-400">🔄</span>
+                    <h3 class="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Similar Medicines &amp; Generic Alternatives</h3>
+                  </div>
+                  <span class="text-[10px] text-emerald-400 font-bold">Cost-Saving Molecules</span>
+                </div>
+                <div id="medSimilarContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+              </div>
+
+              <!-- Storage Info -->
+              <div class="text-[11px] text-slate-400 pt-2 border-t border-slate-700 flex items-center gap-2">
+                <span><strong>Storage Advice:</strong> <span id="medStorage">Store below 25°C away from excessive moisture, heat, and direct sunlight. Keep out of reach of children.</span></span>
+              </div>
+
+            </div>
+
+            <!-- Prescription Details Card (When prescription mode is scanned) -->
+            <div id="prescriptionResultCard" class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl space-y-6 hidden">
+              <div class="p-4 bg-slate-900 text-white rounded-2xl flex flex-wrap items-center justify-between gap-4 border border-slate-700">
+                <div>
+                  <h3 id="rxClinic" class="text-sm font-extrabold text-cyan-400 uppercase">St. Jude Metropolitan Clinic</h3>
+                  <h2 id="rxDoctorName" class="text-lg font-bold text-white mt-0.5">Dr. Robert Vance, MD</h2>
+                </div>
+                <div class="text-right text-xs">
+                  <span class="text-slate-400">Date:</span>
+                  <span id="rxDate" class="font-bold text-white ml-1">Today</span>
+                </div>
+              </div>
+
+              <div class="p-3.5 bg-cyan-950/50 border border-cyan-800 rounded-xl">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Diagnosis:</span>
+                <p id="rxDiagnosis" class="text-sm font-bold text-white mt-0.5">Acute Bronchitis</p>
+              </div>
+
+              <div class="overflow-x-auto rounded-xl border border-slate-700">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-900 text-slate-300 font-bold border-b border-slate-700">
+                      <th class="py-2.5 px-3">Medicine</th>
+                      <th class="py-2.5 px-3">Dosage</th>
+                      <th class="py-2.5 px-3">Frequency</th>
+                      <th class="py-2.5 px-3">Duration</th>
+                      <th class="py-2.5 px-3">Instructions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rxMedicationsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- ====================================================== -->
+    <!-- VIEW 2: LAB REPORT & SPECIFIC PROBLEMS DIAGNOSER       -->
+    <!-- ====================================================== -->
+    <main id="labReportView" class="hidden max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      
+      <!-- Lab Header -->
+      <div class="mb-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 text-xs font-bold mb-2">
+          <span>🧪</span>
+          <span>Diagnostic Laboratory Report Intelligence</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Medical Lab Report Scanner &amp; Diagnostic Analyzer</h2>
+        <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl">
+          Scan or upload your blood test, diabetic profile, lipid panel, or thyroid reports. MedScan detects <strong class="text-cyan-400">highlighted out-of-range values</strong>, diagnoses <strong class="text-cyan-400">specific health problems</strong>, calculates report <strong class="text-cyan-400">expiry / re-test validity dates</strong>, and recommends medications.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Lab Report Upload & 1-Click Samples -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <!-- Report Upload Box -->
+          <div class="bg-slate-800/90 rounded-2xl border border-slate-700 p-6 shadow-xl card-glow-cyan text-center">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 text-cyan-400 mx-auto flex items-center justify-center mb-3 text-xl">
+              📄
+            </div>
+            <h3 class="text-sm font-bold text-white">Upload Your Medical Lab Report</h3>
+            <p class="text-xs text-slate-400 mt-1">Supports Blood Tests (CBC), Diabetes (HbA1c), Lipid Profile &amp; Thyroid</p>
+            
+            <input type="file" id="labReportFileInput" accept="image/*" class="hidden" />
+            <label for="labReportFileInput" class="mt-4 inline-block px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 cursor-pointer transition">
+              Select Lab Report File
+            </label>
+          </div>
+
+          <!-- Sample Lab Reports (1-Click Test) -->
+          <div id="sampleLabReportsSection" class="bg-slate-800/80 rounded-2xl border border-slate-700 p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="font-bold text-xs text-slate-200 uppercase tracking-wider">Try Demo Lab Reports</h3>
+                <p class="text-[11px] text-slate-400">Instant test with highlighted out-of-range biomarkers</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">1-Click Test</span>
+            </div>
+            
+            <div id="sampleLabReportsGrid" class="space-y-2.5">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Disease Prediction, Highlights & Expiry Dates -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <!-- Empty State -->
+          <div id="labEmptyState" class="bg-slate-800/60 border border-slate-700 rounded-3xl p-8 text-center text-slate-400">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl">
+              🔬
+            </div>
+            <h4 class="text-base font-bold text-slate-200">No Lab Report Analyzed Yet</h4>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">Click one of the demo reports on the left (e.g. Diabetic Profile, Lipid Profile, or CBC Anemia) or upload your own to view detected diseases, highlighted values, and expiry validity.</p>
+          </div>
+
+          <!-- Diagnostic Results Card -->
+          <div id="labReportResultCard" class="hidden bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl space-y-6 card-glow-emerald">
+            
+            <!-- Report Validity / Expiry Banner (User Request) -->
+            <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm">
+                  📑
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-slate-400">Report Validity &amp; Expiry Window:</span>
+                  <p class="text-xs font-bold text-white mt-0.5">
+                    Tested: <span id="labReportDate" class="text-cyan-400">12/05/2026</span> • Re-Test Expiry: <span id="labExpiryDate" class="text-emerald-400 font-extrabold">12/08/2026</span>
+                  </p>
+                </div>
+              </div>
+              <div>
+                <span id="labExpiryStatusBadge" class="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase">
+                  ACTIVE &amp; VALID
+                </span>
+              </div>
+            </div>
+
+            <!-- Disease Diagnosis Header -->
+            <div class="border-b border-slate-700 pb-5">
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <span class="text-[10px] font-bold px-3 py-1 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase tracking-wider">Clinical Diagnostic Evaluation</span>
+                <span id="labSeverityBadge" class="text-[10px] font-black px-3 py-1 rounded-full bg-red-950 text-red-400 border border-red-800 uppercase">HIGH RISK</span>
+              </div>
+              <h3 id="labDiagnosedDisease" class="text-2xl font-extrabold text-white tracking-tight">Type 2 Diabetes Mellitus</h3>
+              <p id="labExplanation" class="text-xs text-slate-300 leading-relaxed mt-2 font-medium">Elevated Fasting Glucose and HbA1c indicative of insulin resistance.</p>
+            </div>
+
+            <!-- USER REQUEST: HIGHLIGHT VALUES TABLE -->
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Biomarker Findings with Highlighted Values</h4>
+                <div class="flex items-center gap-2 text-[10px]">
+                  <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Normal</span>
+                  <span class="flex items-center gap-1 text-red-400"><span class="w-2 h-2 rounded-full bg-red-500"></span> High / Critical</span>
+                  <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Low</span>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto rounded-xl border border-slate-700">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-900 text-slate-300 font-bold border-b border-slate-700">
+                      <th class="py-2.5 px-3">Parameter</th>
+                      <th class="py-2.5 px-3">Observed Value</th>
+                      <th class="py-2.5 px-3">Reference Range</th>
+                      <th class="py-2.5 px-3">Highlight Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="labBiomarkersTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- USER REQUEST: SPECIFIC PROBLEMS IDENTIFIED BY SEEING HIGHLIGHT VALUES -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-700 space-y-3">
+              <div class="flex items-center gap-2 text-amber-400">
+                <span class="text-lg">🎯</span>
+                <h4 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Specific Health Problems Identified by Highlighted Values</h4>
+              </div>
+
+              <div id="labSpecificProblemsList" class="space-y-2.5"></div>
+            </div>
+
+            <!-- RECOMMENDED MEDICATIONS -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-emerald-400 text-base">💊</span>
+                  <h4 class="text-xs font-extrabold text-white uppercase tracking-wider">Recommended Medications for This Condition</h4>
+                </div>
+                <button id="addLabMedsToCabinetBtn" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow">
+                  + Add All to My Cabinet
+                </button>
+              </div>
+
+              <div id="labRecommendedMedsContainer" class="space-y-3"></div>
+            </div>
+
+            <!-- Clinical Advice & Specialist Recommendation -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700">
+                <span class="text-xs font-bold text-cyan-400">👨‍⚕️ Specialist to Consult</span>
+                <p id="labSpecialist" class="text-sm font-bold text-white mt-1">Endocrinologist / Diabetologist</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Schedule a comprehensive clinical consultation.</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700">
+                <span class="text-xs font-bold text-emerald-400">🥗 Lifestyle &amp; Dietary Guidelines</span>
+                <ul id="labLifestyleList" class="text-xs text-slate-300 space-y-1 mt-1.5"></ul>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- ====================================================== -->
+    <!-- VIEW 3: HEALTH DIARY & VITALS CALCULATOR (NEW)         -->
+    <!-- USER REQUEST: BLOOD PRESSURE, WEIGHT & SUGAR LEVELS    -->
+    <!-- ====================================================== -->
+    <main id="healthDiaryView" class="hidden max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      
+      <!-- Section Header -->
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold mb-2">
+          <span>📊</span>
+          <span>Personal Health Diary &amp; Clinical Vitals Calculators</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Health Diary &amp; Vitals Calculator</h2>
+        <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl">
+          Track and calculate your <strong class="text-emerald-400">Blood Pressure</strong>, <strong class="text-emerald-400">Weight &amp; BMI</strong>, and <strong class="text-emerald-400">Blood Sugar Levels</strong>. Save daily readings to your private log with instant status classification and clinical feedback.
+        </p>
+      </div>
+
+      <!-- 3 Calculators Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- 1. BLOOD PRESSURE CALCULATOR -->
+        <div class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl card-glow-cyan flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-red-950 text-red-400 flex items-center justify-center text-lg font-bold">
+                  ❤️
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-white text-sm">Blood Pressure</h3>
+                  <p class="text-[11px] text-slate-400">Systolic &amp; Diastolic (mmHg)</p>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800">AHA Guideline</span>
+            </div>
+
+            <form id="bpForm" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Systolic (Top)</label>
+                  <input type="number" id="bpSystolic" value="120" min="50" max="260" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:ring-2 focus:ring-cyan-500/30 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Diastolic (Bottom)</label>
+                  <input type="number" id="bpDiastolic" value="80" min="30" max="180" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:ring-2 focus:ring-cyan-500/30 focus:outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Pulse / Heart Rate (bpm)</label>
+                <input type="number" id="bpPulse" value="72" min="30" max="220" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow transition">
+                  Calculate BP
+                </button>
+                <button type="button" id="saveBpEntryBtn" class="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-xl transition" title="Save to Diary">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- BP Result Box -->
+          <div id="bpResultBox" class="mt-4 p-3.5 rounded-2xl bg-slate-900 border border-slate-700 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase text-slate-400">BP Classification:</span>
+              <span id="bpCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">Normal</span>
+            </div>
+            <p id="bpNumbersDisplay" class="text-base font-extrabold text-white">120 / 80 mmHg</p>
+            <p id="bpAdviceDisplay" class="text-[11px] text-slate-300 leading-snug">Optimal healthy blood pressure. Keep active and maintain balanced low-sodium nutrition.</p>
+          </div>
+        </div>
+
+        <!-- 2. WEIGHT & BMI CALCULATOR -->
+        <div class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl card-glow-emerald flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-emerald-950 text-emerald-400 flex items-center justify-center text-lg font-bold">
+                  ⚖️
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-white text-sm">Weight &amp; BMI</h3>
+                  <p class="text-[11px] text-slate-400">Body Mass Index &amp; Target</p>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">WHO Standard</span>
+            </div>
+
+            <form id="bmiForm" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Weight (kg)</label>
+                  <input type="number" id="weightVal" step="0.5" value="70" min="20" max="300" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:ring-2 focus:ring-emerald-500/30 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Height (cm)</label>
+                  <input type="number" id="heightVal" value="175" min="80" max="250" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:ring-2 focus:ring-emerald-500/30 focus:outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Notes / Context</label>
+                <input type="text" id="weightNotes" placeholder="e.g. Morning empty stomach" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow transition">
+                  Calculate BMI
+                </button>
+                <button type="button" id="saveBmiEntryBtn" class="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-xl transition" title="Save to Diary">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- BMI Result Box -->
+          <div id="bmiResultBox" class="mt-4 p-3.5 rounded-2xl bg-slate-900 border border-slate-700 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase text-slate-400">BMI Category:</span>
+              <span id="bmiCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">Normal (22.9)</span>
+            </div>
+            <p id="bmiDisplay" class="text-base font-extrabold text-white">BMI: 22.9 kg/m²</p>
+            <p id="bmiAdviceDisplay" class="text-[11px] text-slate-300 leading-snug">Healthy weight range: 56.7 - 76.3 kg. Daily water target: 2.5 L.</p>
+          </div>
+        </div>
+
+        <!-- 3. BLOOD SUGAR CALCULATOR -->
+        <div class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl card-glow-indigo flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-indigo-950 text-indigo-400 flex items-center justify-center text-lg font-bold">
+                  🩸
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-white text-sm">Blood Sugar (Glucose)</h3>
+                  <p class="text-[11px] text-slate-400">Fasting, Post-Meal &amp; HbA1c</p>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">ADA Standard</span>
+            </div>
+
+            <form id="sugarForm" class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Test Timing / Type</label>
+                <select id="sugarTestType" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:outline-none">
+                  <option value="fasting">Fasting Blood Sugar (FBS, mg/dL)</option>
+                  <option value="postprandial">Post-Meal 2 Hours (PPBS, mg/dL)</option>
+                  <option value="random">Random Blood Glucose (mg/dL)</option>
+                  <option value="hba1c">Glycated Hemoglobin (HbA1c, %)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Reading Value</label>
+                <input type="number" id="sugarVal" step="0.1" value="95" min="20" max="600" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 font-bold focus:ring-2 focus:ring-indigo-500/30 focus:outline-none" />
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow transition">
+                  Calculate Status
+                </button>
+                <button type="button" id="saveSugarEntryBtn" class="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-xl transition" title="Save to Diary">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sugar Result Box -->
+          <div id="sugarResultBox" class="mt-4 p-3.5 rounded-2xl bg-slate-900 border border-slate-700 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase text-slate-400">Glycemic Status:</span>
+              <span id="sugarCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">Normal (95 mg/dL)</span>
+            </div>
+            <p id="sugarDisplay" class="text-base font-extrabold text-white">95 mg/dL (Fasting)</p>
+            <p id="sugarAdviceDisplay" class="text-[11px] text-slate-300 leading-snug">Normal fasting blood sugar. Optimal glycemic balance.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Health Diary Historical Logs Table -->
+      <div class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4">
+          <div>
+            <h3 class="font-extrabold text-white text-base flex items-center gap-2">
+              <span>📓</span> My Health Diary Log History
+            </h3>
+            <p class="text-xs text-slate-400">Chronological recordings for blood pressure, weight, and blood sugar</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="addQuickDemoLogBtn" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition">
+              + Add Demo Record
+            </button>
+            <button id="clearDiaryBtn" class="px-3 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-300 text-xs font-semibold rounded-xl border border-red-800 transition">
+              Clear Logs
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-700">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-slate-300 font-bold border-b border-slate-700">
+                <th class="py-2.5 px-3">Date &amp; Time</th>
+                <th class="py-2.5 px-3">Vital Metric</th>
+                <th class="py-2.5 px-3">Measured Value</th>
+                <th class="py-2.5 px-3">Clinical Status</th>
+                <th class="py-2.5 px-3">Context / Notes</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="diaryHistoryTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ====================================================== -->
+    <!-- VIEW 4: MY STORED MEDICINES CABINET (NEW)              -->
+    <!-- USER REQUEST: STORING & ADDING MEDICINES               -->
+    <!-- ====================================================== -->
+    <main id="medicineCabinetView" class="hidden max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      
+      <!-- Section Header -->
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold mb-2">
+            <span>💊</span>
+            <span>Personal Medicine Storage &amp; Prescription Cabinet</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">My Stored Medicines Cabinet</h2>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl">
+            Store and manage your active medications, schedule dosages, monitor <strong class="text-indigo-400">expiry dates</strong>, check off daily intake, and listen to voice announcements.
+          </p>
+        </div>
+
+        <button id="toggleAddMedFormBtn" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+          <span>+</span>
+          <span>Add New Medicine to Cabinet</span>
+        </button>
+      </div>
+
+      <!-- Add New Medicine Form (Collapsible) -->
+      <div id="addMedFormCard" class="bg-slate-800/90 rounded-3xl border border-slate-700 p-6 shadow-xl card-glow-cyan">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <span>➕</span> Add a New Medicine to Your Personal Cabinet
+          </h3>
+          <span class="text-[10px] text-cyan-400 font-semibold">Stores in Local Profile</span>
+        </div>
+
+        <form id="cabinetAddForm" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Medicine Name *</label>
+              <input type="text" id="cabName" required placeholder="e.g. Paracetamol 650mg" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Purpose / Indication</label>
+              <input type="text" id="cabPurpose" placeholder="e.g. High Fever &amp; Headache" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Strength / Dosage Form</label>
+              <input type="text" id="cabStrength" placeholder="e.g. 650 mg (Tablet)" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Daily Schedule Timing</label>
+              <select id="cabTiming" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none">
+                <option value="Morning 🌅 (After Food)">Morning 🌅 (After Food)</option>
+                <option value="Morning 🌅 (Empty Stomach)">Morning 🌅 (Empty Stomach)</option>
+                <option value="Morning 🌅 & Night 🌙 (Twice Daily)">Morning 🌅 & Night 🌙 (Twice Daily)</option>
+                <option value="Night 🌙 (Before Bed)">Night 🌙 (Before Bed)</option>
+                <option value="3 Times Daily (Morning, Noon, Night)">3 Times Daily (Morning, Noon, Night)</option>
+                <option value="As Needed (SOS / PRN for Fever/Pain)">As Needed (SOS / PRN for Fever/Pain)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Expiry Date *</label>
+              <input type="date" id="cabExpiryDate" required class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Quantity / Pills Remaining</label>
+              <input type="number" id="cabStock" value="15" min="1" max="500" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Category</label>
+              <input type="text" id="cabCategory" placeholder="e.g. Analgesic / Antipyretic" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">How to Use &amp; Instructions</label>
+            <input type="text" id="cabHowToTake" placeholder="e.g. Swallow whole with a glass of water. Maintain 4-6 hours between doses." class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none" />
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow transition">
+              + Save Medicine to Cabinet
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Active Stored Medicines Grid -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-extrabold text-white text-base flex items-center gap-2">
+            <span>📦</span> Stored Medicines in Your Cabinet
+          </h3>
+          <span class="text-xs text-slate-400">Click checkboxes to mark daily compliance</span>
+        </div>
+
+        <div id="cabinetFullGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: QUICK CABINET DRAWER                              -->
+  <!-- ======================================================== -->
+  <div id="cabinetModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-700 space-y-4 max-h-[90vh] flex flex-col card-glow-cyan">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold">💊</div>
+          <div>
+            <h3 class="font-bold text-white text-base">My Medicine Cabinet</h3>
+            <p class="text-xs text-slate-400">Track active medicines &amp; daily doses</p>
+          </div>
+        </div>
+        <button id="closeCabinetBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="cabinetList"></div>
+
+      <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
+        <button id="modalSwitchToCabinetTabBtn" class="text-xs text-cyan-400 font-bold hover:underline">
+          Open Full Cabinet &amp; Add New Medicine →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: GEMINI VISION API SETTINGS                        -->
+  <!-- ======================================================== -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-700 space-y-4 card-glow-indigo">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚙️</span>
+          <h3 class="font-bold text-white text-base">Gemini Vision AI Settings</h3>
+        </div>
+        <button id="closeApiKeyBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-xs text-slate-400 leading-relaxed">
+          The app works out-of-the-box using the <strong>Built-in Clinical Knowledge Base</strong>. You can optionally enter your Gemini API key to recognize any custom medication or real-world prescription image.
+        </p>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Google Gemini API Key</label>
+          <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Multimodal Vision Model</label>
+          <select id="modelSelect" class="w-full text-xs p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast &amp; Accurate)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Clinical Reasoning)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Latest)</option>
+          </select>
+        </div>
+
+        <button id="saveApiKeyBtn" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl transition shadow">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- FOOTER & CLINICAL DISCLAIMER                             -->
+  <!-- ======================================================== -->
+  <footer class="mt-auto bg-slate-950 border-t border-slate-800 py-6 px-4 text-center">
+    <div class="max-w-4xl mx-auto space-y-2">
+      <p class="text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5">
+        <span class="text-amber-400">⚠️</span>
+        Clinical &amp; Healthcare Project Disclaimer
+      </p>
+      <p class="text-[11px] text-slate-500 leading-relaxed max-w-2xl mx-auto">
+        MedScan AI is an assistive digital healthcare and pharmaceutical reference system developed for evaluation. It does NOT substitute for professional clinical medical advice or physician diagnosis. Always verify prescriptions with a registered doctor.
+      </p>
+      <p class="text-[10px] text-slate-600">© 2026 MedScan AI • All Rights Reserved</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/auth-manager.js"></script>
+  <script src="js/medicine-db.js"></script>
+  <script src="js/samples.js"></script>
+  <script src="js/lab-report-analyzer.js"></script>
+  <script src="js/health-diary.js"></script>
+  <script src="js/speech-helper.js"></script>
+  <script src="js/patient-manager.js"></script>
+  <script src="js/vision-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

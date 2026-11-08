@@ -1,0 +1,128 @@
+/* MedScan AI - Unique Bio-Tech Medical Aesthetics & Animations */
+
+:root {
+  --glow-cyan: rgba(6, 182, 212, 0.35);
+  --glow-indigo: rgba(99, 102, 241, 0.3);
+  --glow-emerald: rgba(16, 185, 129, 0.3);
+}
+
+/* Glowing Neon Card Outlines */
+.card-glow-cyan {
+  box-shadow: 0 4px 20px -2px rgba(6, 182, 212, 0.15), 0 0 0 1px rgba(6, 182, 212, 0.2);
+}
+
+.card-glow-indigo {
+  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.18), 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
+.card-glow-emerald {
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.18), 0 0 0 1px rgba(16, 185, 129, 0.25);
+}
+
+/* Laser Scanning Line with Dual Gradient & Blur */
+@keyframes laserSweep {
+  0% {
+    top: 4%;
+    opacity: 0.9;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 4%;
+    opacity: 0.9;
+  }
+}
+
+.laser-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #06b6d4, #6366f1, #38bdf8, transparent);
+  box-shadow: 0 0 16px #06b6d4, 0 0 28px #6366f1;
+  animation: laserSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 20;
+}
+
+/* Viewfinder corner brackets */
+.corner-bracket {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #06b6d4;
+  pointer-events: none;
+}
+.corner-tl { top: 14px; left: 14px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 6px; }
+.corner-tr { top: 14px; right: 14px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 6px; }
+.corner-bl { bottom: 14px; left: 14px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 6px; }
+.corner-br { bottom: 14px; right: 14px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+
+/* Subtle Grid Background Pattern */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(14, 165, 233, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Gradient text utility */
+.gradient-text-bio {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Smooth Tab Transitions */
+.tab-btn.active {
+  background: linear-gradient(135deg, #0891b2 0%, #4f46e5 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 15px -1px rgba(8, 145, 178, 0.4);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print Stylesheet */
+@media print {
+  header,
+  footer,
+  #authView,
+  #navTabs,
+  #scannerLeftCol,
+  #samplePresetsSection,
+  #sampleLabReportsSection,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  #resultsContainer,
+  #labReportResultCard {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

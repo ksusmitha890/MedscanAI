@@ -1,0 +1,20 @@
+{
+  "name": "mediscan-ai",
+  "version": "1.0.0",
+  "description": "MedScan AI - Medicine & Prescription Visual Information Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "medicine",
+    "ocr",
+    "gemini",
+    "prescription",
+    "healthcare",
+    "vision"
+  ],
+  "author": "MedScan Team",
+  "license": "MIT"
+}
